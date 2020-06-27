@@ -92,6 +92,7 @@ def connectDiscord():
 
 async def task():
 	await client.wait_until_ready()
+	print('start')
 	await asyncio.sleep(1) # task runs every 60 seconds
 
 while True:
@@ -103,6 +104,7 @@ while True:
 	#채팅방
 	@client.command(name=command[1][0], aliases=command[1][1:])
 	async def connectVoiceChatting(ctx):
+		print('enter voice channel')
 		if ctx.voice_client is None:
 			if ctx.author.voice:
 				await ctx.author.voice.channel.connect(reconnect = True)
@@ -120,30 +122,47 @@ while True:
 	#시간표
 	@client.command(name=command[2][0], aliases=command[2][1:])
 	async def printSchedule(ctx):
+		print('load sheet')
 		gc1 = gspread.authorize(credentials).open("보스타임").worksheet('2.보스 리젠 시간').range('AB3:AF29')
 
+		print('success')
 		schedule = []
 		outPut = []
+		outPut.append('')
 
+		enterIndex = 0
 		for cell in gc1:
-			schedule[cell.row].append(cell.value + '\t')
-		
-		for i in len(schedule):
-			for j in len(schedule[i]):
-				outPut.append(schedule[i][j])
-			outPut.append('\n')
+			enterIndex += 1
+			if enterIndex % 5 is not 0 and cell.col % 5 is 3:
+				schedule.append('```')
+			schedule.append(cell.value)
+			if enterIndex % 5 is 0 and enterIndex is not 0:
+				schedule.append('\n```')
+
+		for i in range(len(schedule)):
+			if i < 7:
+				continue
+			if i % 7 is not 3:
+				if i % 7 is 1:
+					outPut[0] = outPut[0] + '[{0:^2s}]'.format(schedule[i])
+				if i % 7 is 2:
+					outPut[0] = outPut[0] + '[{0:^7s}]'.format(schedule[i])
+				if i % 7 is 4 or i % 7 is 5:
+					outPut[0] = outPut[0] + '[{0:^5s}]'.format(schedule[i])
+				if i % 7 is 0 or i % 7 is 6:
+					outPut[0] = outPut[0] + schedule[i]
 
 		embed = discord.Embed(
-			title = '',
-			description= outPut,
-			color=0x0000ff
+			title = 'title',
+			description = outPut[0],
+			color = 0xff00ff
 		)
+		
 		await ctx.send( embed=embed, tts=False)
-
-		return
 
 	@client.event
 	async def on_command_error(ctx, error):
+		print('error')
 		if isinstance(error, CommandNotFound):
 			return
 		elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
